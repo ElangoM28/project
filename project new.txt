@@ -1,0 +1,41 @@
+import java.time.*;
+
+public class SunPositionCalculator {
+
+    private static double degToRad(double deg) {
+        return Math.toRadians(deg);
+    }
+
+    private static double radToDeg(double rad) {
+        return Math.toDegrees(rad);
+    }
+
+    public static double[] calculateSunPosition(double latitude, double longitude, LocalDateTime dateTime) {
+        double lat = degToRad(latitude);
+        LocalDateTime epoch = LocalDateTime.of(2000, 1, 1, 12, 0);
+        Duration duration = Duration.between(epoch, dateTime);
+        double n = duration.toSeconds() / 86400.0;
+        double L = (280.46 + 0.9856474 * n) % 360;
+        double g = degToRad((357.528 + 0.9856003 * n) % 360);
+        double lambdaSun = degToRad((L + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) % 360);
+        double epsilon = degToRad(23.439 - 0.0000004 * n);
+        double declination = Math.asin(Math.sin(epsilon) * Math.sin(lambdaSun));
+        double rightAscension = Math.atan2(Math.cos(epsilon) * Math.sin(lambdaSun), Math.cos(lambdaSun));
+        double eqTime = L / 15 - radToDeg(rightAscension) / 15;
+        double solarNoon = 12 - eqTime;
+        double currentTime = dateTime.getHour() + dateTime.getMinute() / 60.0 + dateTime.getSecond() / 3600.0;
+        double hourAngle = degToRad(15 * (currentTime - solarNoon));
+        double altitude = Math.asin(Math.sin(lat) * Math.sin(declination) + Math.cos(lat) * Math.cos(declination) * Math.cos(hourAngle));
+        double azimuth = Math.atan2(-Math.sin(hourAngle), Math.cos(hourAngle) * Math.sin(lat) - Math.tan(declination) * Math.cos(lat));
+        return new double[]{radToDeg(azimuth), radToDeg(altitude)};
+    }
+
+    public static void main(String[] args) {
+        double latitude = 12.971598;
+        double longitude = 77.594566;
+        LocalDateTime currentTime = LocalDateTime.now();
+        double[] sunPosition = calculateSunPosition(latitude, longitude, currentTime);
+        System.out.printf("Sun Azimuth Angle: %.2f degrees\n", sunPosition[0]);
+        System.out.printf("Sun Altitude Angle: %.2f degrees\n", sunPosition[1]);
+    }
+}
